@@ -21,6 +21,7 @@
 #include "config.h"
 #include "wwvb_encoder.h"
 #include "ntp_manager.h"
+#include "dst_manager.h"
 #include "debug_utils.h"
 
 // ============================================================
@@ -33,13 +34,6 @@ bool transmitting = false;             // Currently transmitting
 unsigned long frameCount = 0;          // Total frames transmitted
 unsigned long uptimeStart = 0;         // millis() at startup
 
-// ============================================================
-// DST Configuration
-// ============================================================
-// Set this based on current DST status for your timezone.
-// The transmitter always works in UTC but clocks need DST info.
-// See specs/wwvb_protocol.md for DST bit encoding.
-uint8_t currentDSTStatus = DST_STANDARD;  // Change as needed
 
 // ============================================================
 // Setup
@@ -141,14 +135,21 @@ void encodeNewFrame(const struct tm* currentTime) {
   struct tm nextMinute = *currentTime;
   advanceOneMinute(&nextMinute);
   
+  // Calculate DST status automatically from UTC time and timezone
+  uint8_t dstStatus = calculateDSTStatus(currentTime, DEFAULT_TIMEZONE);
+  
   // Encode the frame
-  encodeWWVBFrame(&nextMinute, wwvbFrame, currentDSTStatus);
+  encodeWWVBFrame(&nextMinute, wwvbFrame, dstStatus);
   frameReady = true;
   frameCount++;
   
   // Print frame details
   int doy = calculateDayOfYear(&nextMinute);
   int year = nextMinute.tm_year + 1900;
+  const char* dstStr = (dstStatus == DST_IN_EFFECT) ? "DST" :
+                       (dstStatus == DST_BEGINS) ? "DST-BEGIN" :
+                       (dstStatus == DST_ENDS) ? "DST-END" : "STD";
+  Serial.printf("[DST] Auto-calculated: %s (timezone UTC%+d)\n", dstStr, DEFAULT_TIMEZONE);
   printFrameSummary(wwvbFrame, nextMinute.tm_min, nextMinute.tm_hour, doy, year);
 }
 

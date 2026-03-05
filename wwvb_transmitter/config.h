@@ -61,9 +61,26 @@ const uint8_t WWVB_MARKER = 2;    // Position/frame marker
 const unsigned long SERIAL_BAUD = 115200;
 
 // ============================================================
+// Timezone Configuration
+// ============================================================
+// US timezone UTC offsets (standard time, before DST adjustment)
+// DST status is calculated automatically from UTC time + timezone.
+// See dst_manager.h for supported timezones.
+const int DEFAULT_TIMEZONE = -8;  // US Pacific (Seattle, WA)
+                                   // -5 = US Eastern
+                                   // -6 = US Central
+                                   // -7 = US Mountain
+                                   // -8 = US Pacific
+
+// ============================================================
 // Timing
 // ============================================================
 const int WIFI_CONNECT_TIMEOUT_MS = 30000;  // 30 second WiFi timeout
 const int NTP_SYNC_TIMEOUT_MS    = 30000;   // 30 second NTP sync timeout
+
+// ============================================================
+// Status LED Blink Rates (milliseconds)
+// ============================================================
+const int LED_BLINK_NO_SYNC = 250;  // Fast blink when no NTP sync
 
 #endif // CONFIG_H

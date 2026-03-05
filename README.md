@@ -124,17 +124,20 @@ tesseract/
 │   ├── hardware_specs.md                  # ESP32, antenna, circuit details
 │   ├── fcc_compliance.md                  # FCC Part 15 requirements
 │   ├── ntp_integration.md                 # NTP client design & failover
+│   ├── dst_calculation.md                 # Automatic DST algorithm & rules
 │   ├── testing_strategy.md                # Test plan & acceptance criteria
 │   ├── implementation_phases.md           # Development phases & milestones
 │   └── references.md                      # External links & datasheets
 ├── wwvb_transmitter/                      # Main Arduino sketch
 │   ├── wwvb_transmitter.ino               # Entry point
-│   ├── config.h                           # WiFi, NTP, pin configuration
+│   ├── config.h                           # WiFi, NTP, timezone configuration
 │   ├── wwvb_encoder.h / .cpp              # WWVB time code encoder
 │   ├── ntp_manager.h / .cpp               # NTP sync with failover
+│   ├── dst_manager.h / .cpp               # Automatic DST calculation
 │   └── debug_utils.h                      # Serial & LED helpers
 └── tests/                                 # Standalone test sketches
     ├── test_wwvb_encoder/                 # Encoder unit tests
+    ├── test_dst_calculation/              # DST calculation unit tests
     ├── test_ntp_client/                   # NTP integration tests
     ├── test_pwm_output/                   # PWM/oscilloscope tests
     └── hardware_validation/               # Full system integration
@@ -153,16 +156,22 @@ This device operates under [FCC Part 15.209](https://www.ecfr.gov/current/title-
 
 ## DST Configuration
 
-WWVB clocks use DST status bits to display local time. Set `currentDSTStatus` in `wwvb_transmitter.ino`:
+DST status is **calculated automatically** from UTC time and your configured timezone. No manual switching needed — the transmitter handles spring forward and fall back transitions on its own.
 
-| Value | Meaning |
-|-------|---------|
-| `DST_STANDARD` | Standard Time in effect |
-| `DST_BEGINS` | DST begins today |
-| `DST_IN_EFFECT` | DST in effect |
-| `DST_ENDS` | DST ends today |
+Set your timezone in `config.h`:
 
-*Future enhancement: automatic DST calculation based on timezone rules.*
+```cpp
+const int DEFAULT_TIMEZONE = -8;  // US Pacific (Seattle, WA)
+                                   // -5 = US Eastern
+                                   // -6 = US Central
+                                   // -7 = US Mountain
+```
+
+The DST engine implements US rules per the Energy Policy Act of 2005:
+- **Spring forward:** 2nd Sunday in March at 2:00 AM local
+- **Fall back:** 1st Sunday in November at 2:00 AM local
+
+On transition days, the WWVB signal broadcasts `DST_BEGINS` or `DST_ENDS` for the entire local calendar day, which tells clocks to adjust their display. See [`specs/dst_calculation.md`](specs/dst_calculation.md) for the full algorithm and edge case handling.
 
 ## Troubleshooting
 

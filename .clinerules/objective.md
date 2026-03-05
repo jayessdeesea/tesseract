@@ -20,6 +20,7 @@ Build a low-power 60 kHz WWVB time signal transmitter using an ESP32 to synchron
 - `specs/hardware_specs.md` - ESP32, ferrite rod, circuit details
 - `specs/fcc_compliance.md` - FCC Part 15 requirements & strategy
 - `specs/ntp_integration.md` - NTP client design & failover
+- `specs/dst_calculation.md` - Automatic DST algorithm & timezone rules
 - `specs/testing_strategy.md` - Unit/integration/hardware test plan
 - `specs/implementation_phases.md` - Development phases & milestones
 - `specs/references.md` - External links & documentation
