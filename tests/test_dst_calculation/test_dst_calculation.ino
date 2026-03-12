@@ -6,16 +6,149 @@
  * full DST status calculation for US timezones.
  * 
  * NO HARDWARE REQUIRED - pure logic tests only.
+ * FULLY SELF-CONTAINED - no external files needed.
  * Upload to ESP32, open Serial Monitor at 115200 baud.
- * 
- * ARDUINO IDE SETUP:
- * Copy these files into this sketch folder:
- *   - wwvb_transmitter/dst_manager.h
- *   - wwvb_transmitter/dst_manager.cpp
- * Then open this .ino in Arduino IDE.
  */
 
-#include "dst_manager.h"
+// ============================================================
+// DST Manager (inlined from wwvb_transmitter/dst_manager.h/.cpp)
+// Source of truth: wwvb_transmitter/dst_manager.h/.cpp
+// Last synced: 2026-03-07
+// ============================================================
+
+#include <Arduino.h>
+#include <stdint.h>
+#include <time.h>
+#include <string.h>
+
+// DST status values (matches wwvb_encoder.h constants)
+#define DST_STANDARD    0x00  // Standard Time in effect
+#define DST_BEGINS      0x02  // DST begins today
+#define DST_IN_EFFECT   0x03  // DST in effect
+#define DST_ENDS        0x01  // DST ends today
+
+// US timezone UTC offsets (standard time)
+enum USTimezone {
+  TZ_US_EASTERN  = -5,   // EST: UTC-5, EDT: UTC-4
+  TZ_US_CENTRAL  = -6,   // CST: UTC-6, CDT: UTC-5
+  TZ_US_MOUNTAIN = -7,   // MST: UTC-7, MDT: UTC-6
+  TZ_US_PACIFIC  = -8    // PST: UTC-8, PDT: UTC-7
+};
+
+// Days in each month (non-leap year)
+static const int MONTH_DAYS[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+
+/*
+ * Day of week using Tomohiko Sakamoto's algorithm.
+ * Returns 0=Sunday, 1=Monday, ..., 6=Saturday.
+ * Valid for any Gregorian date.
+ */
+int dayOfWeek(int year, int month, int day) {
+  static const int t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
+  if (month < 3) year--;
+  return (year + year/4 - year/100 + year/400 + t[month - 1] + day) % 7;
+}
+
+/*
+ * Find the Nth occurrence of a weekday in a given month/year.
+ * weekday: 0=Sunday
+ * n: 1=first, 2=second, etc.
+ */
+int nthWeekdayOfMonth(int year, int month, int weekday, int n) {
+  int dow1 = dayOfWeek(year, month, 1);
+  int firstOccurrence = 1 + ((weekday - dow1 + 7) % 7);
+  int day = firstOccurrence + (n - 1) * 7;
+  return day;
+}
+
+/*
+ * DST start: 2nd Sunday in March
+ */
+int getDSTStartDay(int year) {
+  return nthWeekdayOfMonth(year, 3, 0, 2);
+}
+
+/*
+ * DST end: 1st Sunday in November
+ */
+int getDSTEndDay(int year) {
+  return nthWeekdayOfMonth(year, 11, 0, 1);
+}
+
+/*
+ * Check if a local date/time falls within DST period.
+ * Handles the transition hours on boundary days.
+ * month: 1-12, day: 1-31, hour: 0-23 (local standard time hour)
+ */
+int isInDST(int year, int month, int day, int hour) {
+  int dstStartDay = getDSTStartDay(year);
+  int dstEndDay = getDSTEndDay(year);
+  
+  if (month < 3 || month > 11) return 0;
+  if (month > 3 && month < 11) return 1;
+  
+  if (month == 3) {
+    if (day < dstStartDay) return 0;
+    if (day > dstStartDay) return 1;
+    return (hour >= 2) ? 1 : 0;
+  }
+  
+  if (month == 11) {
+    if (day < dstEndDay) return 1;
+    if (day > dstEndDay) return 0;
+    return (hour < 1) ? 1 : 0;
+  }
+  
+  return 0;
+}
+
+/*
+ * Calculate the WWVB DST status bits from UTC time and timezone.
+ */
+uint8_t calculateDSTStatus(const struct tm* utcTime, int timezoneOffset) {
+  int localHour = utcTime->tm_hour + timezoneOffset;
+  int localDay = utcTime->tm_mday;
+  int localMonth = utcTime->tm_mon + 1;
+  int localYear = utcTime->tm_year + 1900;
+  
+  if (localHour < 0) {
+    localHour += 24;
+    localDay--;
+    if (localDay < 1) {
+      localMonth--;
+      if (localMonth < 1) {
+        localMonth = 12;
+        localYear--;
+      }
+      int prevMonthIdx = localMonth - 1;
+      localDay = MONTH_DAYS[prevMonthIdx];
+      if (prevMonthIdx == 1 && ((localYear % 4 == 0 && localYear % 100 != 0) || localYear % 400 == 0)) {
+        localDay = 29;
+      }
+    }
+  }
+  
+  int dstStartDay = getDSTStartDay(localYear);
+  int dstEndDay = getDSTEndDay(localYear);
+  
+  if (localMonth == 3 && localDay == dstStartDay) {
+    return DST_BEGINS;
+  }
+  
+  if (localMonth == 11 && localDay == dstEndDay) {
+    return DST_ENDS;
+  }
+  
+  if (isInDST(localYear, localMonth, localDay, localHour)) {
+    return DST_IN_EFFECT;
+  }
+  
+  return DST_STANDARD;
+}
+
+// ============================================================
+// End of inlined DST manager
+// ============================================================
 
 // ============================================================
 // Test Framework

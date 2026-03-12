@@ -7,6 +7,8 @@
  * Upload to ESP32, open Serial Monitor at 115200 baud.
  * Connect oscilloscope probe to GPIO 18.
  * 
+ * Uses ESP32 Arduino Core 3.x LEDC API.
+ * 
  * Test sequence:
  *   1. Continuous 60 kHz carrier (verify frequency and duty cycle)
  *   2. Carrier on/off toggle (verify clean transitions)
@@ -21,7 +23,6 @@
 // ============================================================
 const int OUTPUT_PIN     = 18;     // PWM output pin
 const int LED_PIN        = 2;      // Status LED
-const int PWM_CHANNEL    = 0;
 const int PWM_FREQ       = 60000;  // 60 kHz
 const int PWM_RESOLUTION = 8;
 const int PWM_DUTY_ON    = 128;    // 50% duty cycle
@@ -41,10 +42,9 @@ void setup() {
   Serial.println("========================================");
   Serial.println();
   
-  // Configure PWM
-  ledcSetup(PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
-  ledcAttachPin(OUTPUT_PIN, PWM_CHANNEL);
-  ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+  // Configure PWM (ESP32 Core 3.x API)
+  ledcAttach(OUTPUT_PIN, PWM_FREQ, PWM_RESOLUTION);
+  ledcWrite(OUTPUT_PIN, PWM_DUTY_OFF);
   
   pinMode(LED_PIN, OUTPUT);
   
@@ -93,7 +93,7 @@ void testContinuousCarrier() {
   Serial.println();
   
   // Turn on carrier
-  ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
+  ledcWrite(OUTPUT_PIN, PWM_DUTY_ON);
   digitalWrite(LED_PIN, HIGH);
   
   Serial.println("  Carrier ON - verify with oscilloscope");
@@ -101,7 +101,7 @@ void testContinuousCarrier() {
   waitForUser("  Verify 60 kHz carrier is stable");
   
   // Turn off carrier
-  ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+  ledcWrite(OUTPUT_PIN, PWM_DUTY_OFF);
   digitalWrite(LED_PIN, LOW);
 }
 
@@ -120,12 +120,12 @@ void testCarrierOnOff() {
   
   for (int i = 0; i < 10; i++) {
     Serial.printf("  Cycle %d: ON\n", i + 1);
-    ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
+    ledcWrite(OUTPUT_PIN, PWM_DUTY_ON);
     digitalWrite(LED_PIN, HIGH);
     delay(1000);
     
     Serial.printf("  Cycle %d: OFF\n", i + 1);
-    ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+    ledcWrite(OUTPUT_PIN, PWM_DUTY_OFF);
     digitalWrite(LED_PIN, LOW);
     delay(1000);
   }
@@ -149,15 +149,15 @@ void testBit0Timing() {
   
   for (int i = 0; i < 10; i++) {
     Serial.printf("  Bit %d: OFF 200ms\n", i + 1);
-    ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+    ledcWrite(OUTPUT_PIN, PWM_DUTY_OFF);
     delay(200);
     
     Serial.printf("  Bit %d: ON 800ms\n", i + 1);
-    ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
+    ledcWrite(OUTPUT_PIN, PWM_DUTY_ON);
     delay(800);
   }
   
-  ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+  ledcWrite(OUTPUT_PIN, PWM_DUTY_OFF);
   waitForUser("  Verify 200ms off / 800ms on timing");
 }
 
@@ -177,15 +177,15 @@ void testBit1Timing() {
   
   for (int i = 0; i < 10; i++) {
     Serial.printf("  Bit %d: OFF 500ms\n", i + 1);
-    ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+    ledcWrite(OUTPUT_PIN, PWM_DUTY_OFF);
     delay(500);
     
     Serial.printf("  Bit %d: ON 500ms\n", i + 1);
-    ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
+    ledcWrite(OUTPUT_PIN, PWM_DUTY_ON);
     delay(500);
   }
   
-  ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+  ledcWrite(OUTPUT_PIN, PWM_DUTY_OFF);
   waitForUser("  Verify 500ms off / 500ms on timing");
 }
 
@@ -205,15 +205,15 @@ void testMarkerTiming() {
   
   for (int i = 0; i < 10; i++) {
     Serial.printf("  Bit %d: OFF 800ms\n", i + 1);
-    ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+    ledcWrite(OUTPUT_PIN, PWM_DUTY_OFF);
     delay(800);
     
     Serial.printf("  Bit %d: ON 200ms\n", i + 1);
-    ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
+    ledcWrite(OUTPUT_PIN, PWM_DUTY_ON);
     delay(200);
   }
   
-  ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+  ledcWrite(OUTPUT_PIN, PWM_DUTY_OFF);
   waitForUser("  Verify 800ms off / 200ms on timing");
 }
 
@@ -258,17 +258,17 @@ void testFullFrame() {
     Serial.printf("  Sec %02d: %s (%dms off, %dms on)\n", sec, typeStr, lowMs, highMs);
     
     // Carrier OFF
-    ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+    ledcWrite(OUTPUT_PIN, PWM_DUTY_OFF);
     digitalWrite(LED_PIN, LOW);
     delay(lowMs);
     
     // Carrier ON
-    ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
+    ledcWrite(OUTPUT_PIN, PWM_DUTY_ON);
     digitalWrite(LED_PIN, HIGH);
     delay(highMs);
   }
   
-  ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+  ledcWrite(OUTPUT_PIN, PWM_DUTY_OFF);
   digitalWrite(LED_PIN, LOW);
   
   Serial.println();

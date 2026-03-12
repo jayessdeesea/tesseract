@@ -11,9 +11,10 @@
  *   5. LEDC hardware PWM generates 60 kHz carrier
  * 
  * Hardware:
- *   ESP32 GPIO 18 → 1kΩ → 2N2222 base
- *   2N2222 collector → ferrite coil → 5V (through current limit resistor)
- *   2N2222 emitter → GND
+ *   ESP32 GPIO 18 → ULN2003AN pin 1 (Input 1)
+ *   ULN2003AN pin 16 (Output 1) → ferrite coil → 5V (through current limit resistor)
+ *   ULN2003AN pin 8 (COM) → GND
+ *   ULN2003AN pin 9 (VCC) → 5V (flyback diode return)
  * 
  * See specs/ directory for detailed documentation.
  */
@@ -48,10 +49,9 @@ void setup() {
   pinMode(STATUS_LED_PIN, OUTPUT);
   digitalWrite(STATUS_LED_PIN, LOW);
   
-  // Configure LEDC PWM for 60 kHz carrier
-  ledcSetup(PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
-  ledcAttachPin(WWVB_OUTPUT_PIN, PWM_CHANNEL);
-  ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);  // Start with carrier off
+  // Configure LEDC PWM for 60 kHz carrier (ESP32 Core 3.x API)
+  ledcAttach(WWVB_OUTPUT_PIN, PWM_FREQ, PWM_RESOLUTION);
+  ledcWrite(WWVB_OUTPUT_PIN, PWM_DUTY_OFF);  // Start with carrier off
   
   Serial.println("[INIT] PWM configured: 60 kHz on GPIO " + String(WWVB_OUTPUT_PIN));
   
@@ -172,13 +172,13 @@ void transmitBit(uint8_t bitType, int second) {
   int lowMs = getLowDurationMs(bitType);
   
   // Carrier OFF (start of bit)
-  ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+  ledcWrite(WWVB_OUTPUT_PIN, PWM_DUTY_OFF);
   
   // Wait for low-power duration
   delay(lowMs);
   
   // Carrier ON (full power for remainder of second)
-  ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
+  ledcWrite(WWVB_OUTPUT_PIN, PWM_DUTY_ON);
   
   // Debug output (only for markers and bit 1s to reduce serial traffic)
   if (bitType != WWVB_BIT_ZERO) {

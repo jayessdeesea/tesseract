@@ -8,7 +8,8 @@
 ## Component Datasheets
 - **ESP32-WROOM-32 Datasheet:** https://www.espressif.com/sites/default/files/documentation/esp32-wroom-32_datasheet_en.pdf
 - **ESP32 Technical Reference Manual:** https://www.espressif.com/sites/default/files/documentation/esp32_technical_reference_manual_en.pdf
-- **2N2222 Transistor:** https://www.onsemi.com/pdf/datasheet/p2n2222a-d.pdf
+- **ULN2003AN Darlington Array:** https://www.ti.com/lit/ds/symlink/uln2003a.pdf
+- **2N2222 Transistor (alternative):** https://www.onsemi.com/pdf/datasheet/p2n2222a-d.pdf
 - **Fair-Rite Material 61:** https://fair-rite.com/product/61-material/
 
 ## ESP32 Arduino Development

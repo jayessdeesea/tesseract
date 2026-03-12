@@ -31,13 +31,33 @@ Build a low-power 60 kHz WWVB time signal transmitter using an ESP32 to synchron
 - Test sketches: `tests/` directory (each test is a standalone `.ino`)
 - Target: Arduino IDE with ESP32 board support
 
-### 4. Development Workflow
-- Arduino IDE for compilation and upload
-- Copy/paste workflow for code transfer
+### 4. Arduino IDE Constraints
+- Arduino IDE opens `.ino` files, not directories. It automatically includes all `.h`/`.cpp` files in the same directory as the `.ino`.
+- There is **no `-I` include path** equivalent. All dependencies must be in the same directory as the `.ino` file.
+- **Test `.ino` files must be fully self-contained.** Inline all necessary project functions directly in the test file rather than using `#include` to reference files in other directories.
+- Each inlined section must include a "Source of truth" comment and "Last synced" date.
+- The main program (`wwvb_transmitter/wwvb_transmitter.ino`) works natively because all its modules are in the same directory.
+
+### 5. Keeping Tests in Sync
+When modifying code in `wwvb_transmitter/`:
+1. Update the canonical source files (`.h`/`.cpp`) in `wwvb_transmitter/`
+2. Update the inlined copies in any test files that use those functions
+3. Update the "Last synced" date in the test file's inlined section header
+4. Run the updated tests to verify correctness
+
+| Source Module | Test Files That Inline It |
+|---|---|
+| `wwvb_encoder.h/.cpp` | `test_wwvb_encoder.ino`, `hardware_validation.ino` |
+| `dst_manager.h/.cpp` | `test_dst_calculation.ino` |
+| `ntp_manager.h/.cpp` | *(none — test_ntp_client uses ESP32 libs directly)* |
+
+### 6. Development Workflow
+- **VS Code**: Primary editor for all code development
+- **Arduino IDE**: Compilation and upload only — open individual `.ino` files
 - Serial Monitor (115200 baud) for test output and debugging
 - Oscilloscope for hardware signal verification
 
-### 5. Communication Style
+### 7. Communication Style
 - Skip introductory explanations
 - Focus on implementation details and tradeoffs
 - Technical competence assumed (EE degree, ham license, principal SWE)

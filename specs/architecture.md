@@ -21,10 +21,11 @@
    - 200 turns of 30 AWG magnet wire
    - ~10-20 mH inductance
 
-4. **Transistor Driver**
-   - 2N2222 NPN transistor
-   - Base resistor from ESP32 GPIO
+4. **Darlington Driver**
+   - ULN2003AN Darlington transistor array (DIP-16)
+   - Internal input resistors and flyback diodes
    - Drives antenna coil at 60 kHz
+   - 500mA capacity, 3.3V logic compatible
 
 ## Why This Architecture Wins
 
@@ -51,7 +52,7 @@
 - Power failure recovery: auto-reconnect and re-sync
 
 ### Cost
-- ESP32: $6, Ferrite rod: $12, Magnet wire: $9, Transistor/resistors: $2
+- ESP32: $6, Ferrite rod: $12, Magnet wire: $9, ULN2003AN/resistors: $2
 - **Total: ~$29**
 
 ## Rejected Approaches
@@ -90,7 +91,7 @@ NTP Server → WiFi → ESP32 time sync → UTC time
 UTC time → WWVB encoder → 60-bit frame buffer
 Frame buffer → Timer ISR (1Hz) → Bit selector
 Bit selector → LEDC PWM control → 60 kHz carrier modulation
-Carrier → 2N2222 driver → Ferrite rod antenna → RF field
+Carrier → ULN2003AN driver → Ferrite rod antenna → RF field
 ```
 
 ### Timing Architecture

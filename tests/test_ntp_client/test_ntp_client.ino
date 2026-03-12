@@ -14,13 +14,11 @@
 #include <esp_sntp.h>
 
 // ============================================================
-// Configuration - EDIT THESE
+// Configuration
 // ============================================================
-const char* WIFI_SSID     = "your-ssid";
-const char* WIFI_PASSWORD = "your-password";
-const char* NTP_SERVER_1  = "192.168.1.100";   // Primary
-const char* NTP_SERVER_2  = "192.168.1.101";   // Secondary
-const char* NTP_SERVER_3  = "pool.ntp.org";     // Fallback
+// To set up: copy credentials_template.h to credentials.h
+// and edit with your real WiFi SSID, password, and NTP server addresses.
+#include "credentials.h"
 
 // ============================================================
 // Test Framework

@@ -21,18 +21,15 @@
 #include <esp_sntp.h>
 
 // ============================================================
-// Configuration - EDIT THESE
+// Configuration
 // ============================================================
-const char* WIFI_SSID     = "your-ssid";
-const char* WIFI_PASSWORD = "your-password";
-const char* NTP_SERVER_1  = "192.168.1.100";
-const char* NTP_SERVER_2  = "192.168.1.101";
-const char* NTP_SERVER_3  = "pool.ntp.org";
+// To set up: copy credentials_template.h to credentials.h
+// and edit with your real WiFi SSID, password, and NTP server addresses.
+#include "credentials.h"
 
 // Hardware pins
 const int OUTPUT_PIN     = 18;
 const int LED_PIN        = 2;
-const int PWM_CHANNEL    = 0;
 const int PWM_FREQ       = 60000;
 const int PWM_RESOLUTION = 8;
 const int PWM_DUTY_ON    = 128;
@@ -183,10 +180,9 @@ void setup() {
   Serial.println("================================================");
   Serial.println();
   
-  // PWM setup
-  ledcSetup(PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
-  ledcAttachPin(OUTPUT_PIN, PWM_CHANNEL);
-  ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+  // PWM setup (ESP32 Core 3.x API)
+  ledcAttach(OUTPUT_PIN, PWM_FREQ, PWM_RESOLUTION);
+  ledcWrite(OUTPUT_PIN, PWM_DUTY_OFF);
   pinMode(LED_PIN, OUTPUT);
   
   Serial.println("[HW] PWM configured: 60 kHz on GPIO 18");
@@ -287,12 +283,12 @@ void loop() {
       unsigned long bitStart = millis();
       
       // Carrier OFF
-      ledcWrite(PWM_CHANNEL, PWM_DUTY_OFF);
+      ledcWrite(OUTPUT_PIN, PWM_DUTY_OFF);
       digitalWrite(LED_PIN, LOW);
       delay(lowMs);
       
       // Carrier ON
-      ledcWrite(PWM_CHANNEL, PWM_DUTY_ON);
+      ledcWrite(OUTPUT_PIN, PWM_DUTY_ON);
       digitalWrite(LED_PIN, HIGH);
       
       unsigned long bitDuration = millis() - bitStart;

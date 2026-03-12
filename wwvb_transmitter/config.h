@@ -8,17 +8,11 @@
 #define CONFIG_H
 
 // ============================================================
-// WiFi Configuration
+// WiFi & NTP Credentials (from separate file, not committed to git)
 // ============================================================
-const char* WIFI_SSID     = "your-ssid";
-const char* WIFI_PASSWORD = "your-password";
-
-// ============================================================
-// NTP Server Configuration (priority order)
-// ============================================================
-const char* NTP_SERVER_1 = "192.168.1.100";   // Primary: local stratum-1
-const char* NTP_SERVER_2 = "192.168.1.101";   // Secondary: local stratum-1
-const char* NTP_SERVER_3 = "pool.ntp.org";     // Tertiary: internet fallback
+// To set up: copy credentials_template.h to credentials.h
+// and edit with your real WiFi SSID, password, and NTP server addresses.
+#include "credentials.h"
 
 // NTP sync interval in milliseconds (default: 1 hour)
 const unsigned long NTP_SYNC_INTERVAL_MS = 3600000UL;
@@ -26,13 +20,12 @@ const unsigned long NTP_SYNC_INTERVAL_MS = 3600000UL;
 // ============================================================
 // GPIO Pin Configuration
 // ============================================================
-const int WWVB_OUTPUT_PIN = 18;   // PWM output to transistor driver
+const int WWVB_OUTPUT_PIN = 18;   // PWM output to ULN2003AN driver (pin 1)
 const int STATUS_LED_PIN  = 2;    // Built-in LED for status indication
 
 // ============================================================
 // LEDC PWM Configuration
 // ============================================================
-const int PWM_CHANNEL    = 0;      // LEDC channel (0-15)
 const int PWM_FREQ       = 60000;  // 60 kHz carrier frequency
 const int PWM_RESOLUTION = 8;     // 8-bit resolution (0-255)
 const int PWM_DUTY_ON    = 128;   // 50% duty cycle when carrier on
