@@ -1,2 +1,5 @@
 # WiFi/NTP credentials - never commit real passwords
 credentials.h
+
+# Temporary/scratch files
+tmp/

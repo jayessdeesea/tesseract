@@ -36,8 +36,15 @@ bool ntpInit(const char* ssid, const char* password,
   Serial.println("[NTP] Connecting to WiFi...");
   Serial.printf("[NTP] SSID: %s\n", ssid);
   
-  // Connect to WiFi
+  // Set hostname to "tesseract-XXXXXX" (last 6 hex digits of MAC address)
   WiFi.mode(WIFI_STA);
+  String mac = WiFi.macAddress();
+  mac.replace(":", "");
+  String hostname = "tesseract-" + mac.substring(6);
+  WiFi.setHostname(hostname.c_str());
+  Serial.printf("[NTP] Hostname: %s\n", hostname.c_str());
+  
+  // Connect to WiFi
   WiFi.begin(ssid, password);
   
   unsigned long startMs = millis();

@@ -22,7 +22,7 @@
 // ============================================================
 // WWVB Encoder (inlined from wwvb_transmitter/wwvb_encoder.h/.cpp)
 // Source of truth: wwvb_transmitter/wwvb_encoder.h/.cpp
-// Last synced: 2026-03-07
+// Last synced: 2026-03-11
 // ============================================================
 
 #include <Arduino.h>
@@ -795,7 +795,7 @@ void testBitDurations() {
 // ============================================================
 
 /*
- * Reference Frame 1: 2025-01-01 00:01 UTC (encoding for next minute)
+ * Reference Frame 1: 2025-01-01 00:01 UTC
  * Day of year: 1
  * Standard time, not leap year
  * 

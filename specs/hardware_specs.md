@@ -83,9 +83,11 @@ ESP32 DevKit boards come in **30-pin** and **38-pin** variants. Both work identi
   Input 5 │ 5  12│ Output 5
   Input 6 │ 6  11│ Output 6
   Input 7 │ 7  10│ Output 7
-      COM │ 8   9│ VCC
+      GND │ 8   9│ COM
           └──────┘
 ```
+
+> ⚠️ **Pin 8 vs Pin 9 labeling:** Datasheets label Pin 8 as "GND" or "E" (common emitters → ground) and Pin 9 as "COM" (common diode cathodes → +V supply for flyback return). Don't confuse them — Pin 8 goes to ground, Pin 9 goes to +5V.
 
 ### ULN2003AN Specifications
 - **Package:** DIP-16
@@ -98,34 +100,45 @@ ESP32 DevKit boards come in **30-pin** and **38-pin** variants. Both work identi
 ### Schematic
 
 ```mermaid
-graph TD
-    VIN["⚡ ESP32 VIN (+5V from USB)"] --> R2["🟠 R2: 10-100Ω<br/>Current Limit<br/>(start with 100Ω)"]
-    VIN --> VCC["ULN2003<br/>Pin 9 (VCC)"]
-    R2 --> COIL["🟣 Ferrite Coil<br/>200 turns, 30 AWG<br/>on ferrite rod"]
-    COIL --> OUT1["ULN2003<br/>Pin 16 (Output 1)"]
-    
-    GPIO["📍 ESP32 GPIO18 / D18<br/>60 kHz PWM Output"] --> IN1["ULN2003<br/>Pin 1 (Input 1)"]
-    
-    COM["ULN2003<br/>Pin 8 (COM)"] --> GND["⏚ ESP32 GND"]
+graph LR
+    subgraph ESP32["🔷 ESP32 DevKit"]
+        VIN["VIN (+5V)"]
+        GPIO18["GPIO18 (PWM)"]
+        GND["GND"]
+    end
 
-    style VIN fill:#e1f5fe,stroke:#0277bd
-    style GPIO fill:#e1f5fe,stroke:#0277bd
-    style GND fill:#e1f5fe,stroke:#0277bd
+    subgraph ULN["🟩 ULN2003AN"]
+        IN1["Pin 1 (Input 1)"]
+        ULNGND["Pin 8 (GND)"]
+        ULNCOM["Pin 9 (COM)"]
+        OUT1["Pin 16 (Output 1)"]
+    end
+
+    VIN -->|"+5V"| C1["🟤 C1: 100nF ceramic<br/>(decoupling)"]
+    C1 --> GND
+    VIN --> R2["🟠 R2: 10-100Ω<br/>Current Limit<br/>(start with 100Ω)"]
+    VIN --> ULNCOM
+    R2 --> COIL["🟣 Ferrite Coil<br/>200 turns, 30 AWG<br/>on ferrite rod"]
+    COIL --> OUT1
+    GPIO18 --> IN1
+    ULNGND --> GND
+
+    style ESP32 fill:#e1f5fe,stroke:#0277bd
+    style ULN fill:#e8f5e9,stroke:#2e7d32
     style R2 fill:#fff3e0,stroke:#e65100
     style COIL fill:#f3e5f5,stroke:#7b1fa2
-    style VCC fill:#e8f5e9,stroke:#2e7d32
-    style IN1 fill:#e8f5e9,stroke:#2e7d32
-    style OUT1 fill:#e8f5e9,stroke:#2e7d32
-    style COM fill:#e8f5e9,stroke:#2e7d32
+    style C1 fill:#fff3e0,stroke:#795548
 ```
+
+> **Decoupling:** C1 (100nF ceramic) across the +5V and GND rails, placed close to the ULN2003AN. Add a 10μF electrolytic in parallel if using a long USB cable.
 
 ### Pin Connections
 
 | ULN2003AN Pin | Function | Connects To |
 |---------------|----------|-------------|
 | Pin 1 | Input 1 | ESP32 GPIO 18 (PWM output) |
-| Pin 8 | COM (ground) | ESP32 GND |
-| Pin 9 | VCC (flyback return) | ESP32 VIN (+5V) |
+| Pin 8 | GND (common emitters) | ESP32 GND |
+| Pin 9 | COM (flyback diode return) | ESP32 VIN (+5V) |
 | Pin 16 | Output 1 | Ferrite coil (other end to R2 → +5V) |
 | All others | Unused | Leave unconnected |
 
@@ -142,6 +155,16 @@ graph TD
 - Increases Q factor, improves efficiency
 - Only add if range is insufficient without it
 
+```mermaid
+graph LR
+    R2["R2"] --> C2["🟤 C2: ~470 pF<br/>(series resonant)"] --> COIL["🟣 Ferrite Coil"] --> OUT1["ULN2003<br/>Pin 16"]
+
+    style C2 fill:#fff3e0,stroke:#795548
+    style COIL fill:#f3e5f5,stroke:#7b1fa2
+```
+
+> **Tuning:** Measure actual coil inductance with an LCR meter, then calculate C2 = 1/(4π²f²L). Use a ceramic NPO/C0G capacitor for stability. Parallel combination of standard values may be needed (e.g., 330pF + 150pF = 480pF).
+
 ## Alternative: 2N2222 Transistor Driver Circuit
 
 If ULN2003AN is unavailable, a discrete 2N2222 NPN transistor can be used instead. This requires an additional base resistor and external flyback protection.
@@ -149,28 +172,40 @@ If ULN2003AN is unavailable, a discrete 2N2222 NPN transistor can be used instea
 ### 2N2222 Schematic
 
 ```mermaid
-graph TD
-    VIN["⚡ ESP32 VIN (+5V from USB)"] --> R2["🟠 R2: 10-100Ω<br/>Current Limit<br/>(start with 100Ω)"]
-    R2 --> COIL["🟣 Ferrite Coil<br/>200 turns, 30 AWG<br/>on ferrite rod"]
-    COIL --> C["2N2222<br/>Collector"]
-    
-    GPIO["📍 ESP32 GPIO18 / D18<br/>60 kHz PWM Output"] --> R1["🟠 R1: 1kΩ<br/>Base Resistor"]
-    R1 --> B["2N2222<br/>Base"]
-    
-    E["2N2222<br/>Emitter"] --> GND["⏚ ESP32 GND"]
+graph LR
+    subgraph ESP32["🔷 ESP32 DevKit"]
+        VIN["VIN (+5V)"]
+        GPIO18["GPIO18 (PWM)"]
+        GND["GND"]
+    end
 
-    style VIN fill:#e1f5fe,stroke:#0277bd
-    style GPIO fill:#e1f5fe,stroke:#0277bd
-    style GND fill:#e1f5fe,stroke:#0277bd
+    subgraph Q1["🔴 2N2222 NPN"]
+        B["Base"]
+        Coll["Collector"]
+        E["Emitter"]
+    end
+
+    VIN --> R2["🟠 R2: 10-100Ω<br/>Current Limit<br/>(start with 100Ω)"]
+    R2 --> COIL["🟣 Ferrite Coil<br/>200 turns, 30 AWG<br/>on ferrite rod"]
+    COIL --> Coll
+    GPIO18 --> R1["🟠 R1: 1kΩ<br/>Base Resistor"]
+    R1 --> B
+    E --> GND
+
+    VIN -.->|"cathode"| D1["⚡ D1: 1N4148<br/>Flyback Diode"]
+    D1 -.->|"anode"| Coll
+
+    style ESP32 fill:#e1f5fe,stroke:#0277bd
+    style Q1 fill:#ffebee,stroke:#c62828
     style R1 fill:#fff3e0,stroke:#e65100
     style R2 fill:#fff3e0,stroke:#e65100
     style COIL fill:#f3e5f5,stroke:#7b1fa2
-    style C fill:#ffebee,stroke:#c62828
-    style B fill:#ffebee,stroke:#c62828
-    style E fill:#ffebee,stroke:#c62828
+    style D1 fill:#ffcdd2,stroke:#c62828
 ```
 
 > **2N2222 TO-92 pinout** (flat side facing you): Left = Emitter, Center = Base, Right = Collector
+>
+> **Flyback diode D1:** 1N4148 placed across the coil+collector junction. Cathode to +5V rail, anode to collector. Clamps inductive kickback when the transistor switches off.
 
 ### 2N2222 NPN Transistor
 - **Package:** TO-92
@@ -192,36 +227,68 @@ graph TD
 ## Status Display Interface
 
 ### 7-Segment Display Panel (4× Adafruit HT16K33 Backpack)
-Four I2C 4-digit 7-segment displays showing complete time and system status.
+- **Part:** Adafruit 0.56" 4-Digit 7-Segment Display w/ I2C Backpack ([#880](https://www.adafruit.com/product/880))
+- **Quantity:** 4
+- **Controller:** HT16K33
+- **Interface:** I2C (shared bus)
+- **Voltage:** 3.3V or 5V (backpack has onboard regulator)
 
-| Display | Address | Content | Example |
-|---------|---------|---------|---------|
-| 1 | 0x70 | Year | `2026` |
-| 2 | 0x71 | Month.Day | `03.08` |
-| 3 | 0x72 | Hour:Min (UTC) | `12:34` |
-| 4 | 0x73 | Second + Status | `34.S` |
+Four I2C 4-digit 7-segment displays showing complete local date/time and system status.
+
+| Display | Address | Jumpers | Content | Example |
+|---------|---------|---------|---------|---------|
+| 1 | 0x70 | None (default) | Year (local) | `2026` |
+| 2 | 0x71 | A0 bridged | Month.Day (local) | `03.11` |
+| 3 | 0x72 | A1 bridged | Hour:Min (local) | `16:40` |
+| 4 | 0x73 | A0 + A1 bridged | Second + Status | `34.d` |
+
+> **Local time:** Displays show local time based on the configured timezone
+> (`DEFAULT_TIMEZONE` in `config.h`). DST adjustment is automatic.
+> The WWVB signal itself always transmits UTC — only the display is local.
+
+**I2C Address Jumpers:** On the back of each HT16K33 backpack, bridge solder pads A0/A1/A2 to set the address. Only A0 and A1 are needed for 4 displays.
 
 **Display 4 Status Characters:**
 - `.S` = Standard time (no DST)
-- `.D` = DST in effect
+- `.d` = DST in effect
 - `.E` = Error condition
 - `.C` = Connecting/syncing
 
 **I2C Bus:**
 - **SDA:** GPIO 21
 - **SCL:** GPIO 22
-- **Library:** Adafruit LED Backpack + Adafruit GFX
+- **Library:** Adafruit LED Backpack + Adafruit GFX (install via Arduino Library Manager)
 - **Update rate:** Every second
+- **No pull-up resistors needed** — HT16K33 backpack has onboard pull-ups
 
-### LED Status Panel (3 LEDs)
+**Software module:** `display_manager.h` / `display_manager.cpp`
+
+### LED Status Panel (3 LEDs, Direct ESP32 Drive)
+
+LEDs are driven directly from ESP32 GPIO pins — no ULN2003AN needed.
+ESP32 GPIO can source up to 40mA; status LEDs draw ~5-7mA each.
 
 | LED | GPIO | Color | Meaning |
 |-----|------|-------|---------|
-| NTP Sync | GPIO 19 | 🟢 Green | Solid = synced, slow blink = aging, off = failed |
+| NTP Sync | GPIO 19 | 🟢 Green | Solid = synced (<1hr), slow blink = aging (>1hr), off = failed/stale |
 | WiFi | GPIO 23 | 🔵 Blue | Solid = connected, fast blink = connecting, off = disconnected |
-| Transmit | GPIO 25 | 🔴 Red | Brief flash each second = transmitting, solid = error |
+| Transmit | GPIO 25 | 🔴 Red | Brief 50ms flash each second = transmitting |
 
-**Resistors:** 220Ω for each LED (3.3V GPIO → LED → resistor → GND)
+**Wiring (each LED):** `ESP32 GPIO → LED anode (+) → 220Ω resistor → GND`
+
+**Current per LED (with 220Ω resistor at 3.3V GPIO):**
+| LED Color | Typical Vf | Current | Notes |
+|-----------|-----------|---------|-------|
+| Red | 1.8V | ~6.8mA | Bright |
+| Green | 2.2V | ~5.0mA | Bright |
+| Blue | 3.0V | ~1.4mA | **Dim** — reduce to 100Ω if needed |
+
+> ⚠️ **Blue LED note:** Blue LEDs have Vf ≈ 3.0V, leaving only ~0.3V headroom
+> from a 3.3V GPIO. With 220Ω this yields ~1.4mA which may appear dim.
+> Options: (1) reduce resistor to 100Ω, (2) use a low-Vf blue LED, or
+> (3) substitute a green LED for WiFi status.
+
+**Software module:** `status_leds.h` / `status_leds.cpp`
 
 ### GPIO Pin Summary
 
@@ -255,35 +322,65 @@ All target clocks receive the **WWVB 60 kHz** amplitude-modulated signal. Most c
 
 ## Breadboard Layout (ULN2003AN)
 ```
-+5V rail ──┬──────────────────────────────
-           │         R2 (100Ω)
-           │    ┌─────┤
-           │    │  Ferrite Coil
-           │    │     │
-           │    │   Pin 16 (Output 1)
-           │    │          ┌──⚬──┐
-           │  Pin 9 (VCC)──│     │
-           │               │ ULN │
-           │               │2003 │
-GPIO 18 ──────── Pin 1 ───│     │
-                           │     │
-                  Pin 8 ──│     │
-                    │      └─────┘
-GND rail ───────────┘
+                         ESP32 DevKit
+                        ┌───────────┐
+                   VIN ─┤           ├─ GPIO 18
+                   GND ─┤           │
+                        └───────────┘
+                          │   │   │
++5V rail ─────────────────┘   │   │
+           │  C1 (100nF)      │   │
+           ├──┤── GND rail    │   │
+           │                  │   │
+           │    R2 (100Ω)     │   │
+           ├─────┤            │   │
+           │  Ferrite Coil    │   │
+           │     │            │   │
+           │   Pin 16 (Out1)  │   │
+           │         ┌──⚬──┐  │   │
+           │  Pin 9 ─┤     │  │   │
+           │  (COM)  │ ULN │  │   │
+           │         │2003 │  │   │
+           │  Pin 1 ─┤     ├──┘   │
+           │         │     │      │
+           │  Pin 8 ─┤     │      │
+           │    │    └─────┘      │
+GND rail ──┴────┘                 │
+                                  │
+(GPIO 18 connects to Pin 1) ─────┘
 ```
 
 ### Breadboard Layout (2N2222 Alternative)
 ```
-+5V rail ─────────────────────────────────
-                    R2
-              ┌─────┤
-              │  Ferrite Coil
-              │     │
-              └─ C ─┘  (2N2222)
-                 │ B
-         R1      │
-GPIO 18 ──┤──── B
-                 E
-                 │
-GND rail ─────────────────────────────────
+                         ESP32 DevKit
+                        ┌───────────┐
+                   VIN ─┤           ├─ GPIO 18
+                   GND ─┤           │
+                        └───────────┘
+                          │   │   │
++5V rail ─────────────────┘   │   │
+           │                  │   │
+           │    R2 (100Ω)     │   │
+           ├─────┤            │   │
+           │  Ferrite Coil    │   │
+           │     │            │   │
+           │  D1 (1N4148)     │   │
+           ├──|◁─┤            │   │
+           │     │            │   │
+           │     C (collector)│   │
+           │     ┌───┐        │   │
+           │     │2N │        │   │
+           │     │222│        │   │
+           │     │2  │        │   │
+           │     └─┬─┘        │   │
+           │   B   │ E        │   │
+           │   │   │          │   │
+           │   R1  │          │   │
+           │  (1kΩ)│          │   │
+           │   │   │          │   │
+           │   │   │  GPIO 18─┘   │
+GND rail ──┴───┴───┘              │
+                                  │
+(GPIO 18 connects to R1) ────────┘
 ```
+> **D1 orientation:** The 1N4148 band (cathode) faces the +5V rail. Anode connects to the collector/coil junction.

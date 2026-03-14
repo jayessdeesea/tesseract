@@ -78,24 +78,53 @@
 
 ### Module Decomposition
 ```
-wwvb_transmitter.ino  → Main sketch (setup, loop, coordination)
-├── config.h          → WiFi credentials, NTP servers, pin assignments
-├── wwvb_encoder.h/cpp→ WWVB time code encoding (pure logic, no hardware)
-├── ntp_manager.h/cpp → NTP sync with multi-server failover
-└── debug_utils.h     → Serial output helpers, LED status patterns
+wwvb_transmitter.ino    → Main sketch (quantum state machine, coordination)
+├── config.h            → WiFi credentials, NTP servers, pin assignments
+├── wwvb_encoder.h/cpp  → WWVB time code encoding (pure logic, no hardware)
+├── ntp_manager.h/cpp   → NTP sync with multi-server failover
+├── dst_manager.h/cpp   → Automatic DST calculation from UTC + timezone
+├── display_manager.h/cpp → 4× HT16K33 7-segment displays (local time)
+├── status_leds.h/cpp   → 3 status LEDs (NTP/WiFi/TX)
+└── debug_utils.h       → Serial output helpers, LED status patterns
 ```
 
 ### Data Flow
 ```
 NTP Server → WiFi → ESP32 time sync → UTC time
 UTC time → WWVB encoder → 60-bit frame buffer
-Frame buffer → Timer ISR (1Hz) → Bit selector
-Bit selector → LEDC PWM control → 60 kHz carrier modulation
-Carrier → ULN2003AN driver → Ferrite rod antenna → RF field
+UTC time → DST manager → DST status bits
+UTC time → Display manager → Local time on 7-segment displays
+Frame buffer → Quantum scheduler → Carrier OFF/ON at precise timing
+LEDC PWM → ULN2003AN driver → Ferrite rod antenna → RF field
 ```
 
-### Timing Architecture
-- **1 Hz hardware timer interrupt**: Fires at UTC second boundaries
-- **ISR sets bit timing**: Configures carrier off/on durations per bit type
-- **LEDC hardware PWM**: Generates 60 kHz independently of CPU
-- **Main loop**: Handles NTP resync, serial output, watchdog
+### Timing Architecture — Quantum State Machine
+
+The main loop runs on a **100ms quantum grid** aligned to UTC second boundaries.
+No blocking delays — all timing is achieved through quantum scheduling.
+
+**Quantum cycle (execute-first pattern):**
+1. **Sleep** for remainder of 100ms quantum
+2. **Execute** the action calculated in the previous quantum
+3. **Read** current state (time, NTP status)
+4. **Calculate** the action for the next quantum
+
+**WWVB bit timing maps perfectly to 100ms quanta (10 per second):**
+```
+Quantum 0: Carrier OFF (aligned to UTC second boundary)
+Quantum 1: (carrier still off)
+Quantum 2: Carrier ON if bit=0 (200ms low complete)
+Quantum 3: Display update (non-critical timing slot)
+Quantum 4: (carrier on for bit=0, still off for bit=1)
+Quantum 5: Carrier ON if bit=1 (500ms low complete)
+Quantum 6-7: (carrier on, maintenance at Q7 of second 30)
+Quantum 8: Carrier ON if marker (800ms low complete)
+Quantum 9: Schedule carrier OFF for next second boundary
+```
+
+**Benefits over blocking delay() approach:**
+- **Smooth display updates** — always at quantum 3 (300ms), independent of bit type
+- **Predictable timing** — all actions aligned to 100ms grid
+- **No jitter** — display and transmission timing are decoupled
+- **Non-blocking** — status LEDs update every quantum (10 Hz)
+- **Catch-up logic** — if a quantum overruns, logs warning and recovers

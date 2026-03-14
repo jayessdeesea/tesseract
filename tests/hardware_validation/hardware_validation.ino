@@ -255,16 +255,14 @@ void loop() {
     
     // Encode new frame at second 0
     if (currentSecond == 0) {
-      struct tm nextMin = timeinfo;
-      advanceOneMinute(&nextMin);
-      encodeWWVBFrame(&nextMin, wwvbFrame, DST_STATUS);
+      encodeWWVBFrame(&timeinfo, wwvbFrame, DST_STATUS);
       frameReady = true;
       frameCount++;
       
-      int doy = calculateDayOfYear(&nextMin);
+      int doy = calculateDayOfYear(&timeinfo);
       Serial.printf("\n[FRAME %lu] Encoding: %04d-%02d-%02d %02d:%02d UTC (Day %d)\n",
-        frameCount, nextMin.tm_year + 1900, nextMin.tm_mon + 1, nextMin.tm_mday,
-        nextMin.tm_hour, nextMin.tm_min, doy);
+        frameCount, timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+        timeinfo.tm_hour, timeinfo.tm_min, doy);
       
       // Print frame
       Serial.print("[FRAME] ");

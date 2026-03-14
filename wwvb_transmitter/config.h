@@ -21,7 +21,16 @@ const unsigned long NTP_SYNC_INTERVAL_MS = 3600000UL;
 // GPIO Pin Configuration
 // ============================================================
 const int WWVB_OUTPUT_PIN = 18;   // PWM output to ULN2003AN driver (pin 1)
-const int STATUS_LED_PIN  = 2;    // Built-in LED for status indication
+const int STATUS_LED_PIN  = 2;    // Built-in LED for basic heartbeat
+
+// Status LED Panel (direct ESP32 drive, 220Ω resistors to GND)
+const int LED_NTP_PIN     = 19;   // Green LED: NTP sync status
+const int LED_WIFI_PIN    = 23;   // Blue LED: WiFi connection status
+const int LED_TX_PIN      = 25;   // Red LED: Transmit activity
+
+// I2C Display (4× Adafruit HT16K33 7-segment backpacks)
+const int I2C_SDA_PIN     = 21;   // I2C data
+const int I2C_SCL_PIN     = 22;   // I2C clock
 
 // ============================================================
 // LEDC PWM Configuration
@@ -74,6 +83,23 @@ const int NTP_SYNC_TIMEOUT_MS    = 30000;   // 30 second NTP sync timeout
 // ============================================================
 // Status LED Blink Rates (milliseconds)
 // ============================================================
-const int LED_BLINK_NO_SYNC = 250;  // Fast blink when no NTP sync
+const int LED_BLINK_NO_SYNC    = 250;   // Fast blink when no NTP sync
+const int LED_BLINK_WIFI_CONN  = 300;   // Fast blink while WiFi connecting
+const int LED_BLINK_NTP_AGING  = 1000;  // Slow blink when NTP aging (>1 hour)
+const int LED_TX_FLASH_MS      = 50;    // Brief flash each second for TX activity
+
+// NTP sync age thresholds (seconds)
+const unsigned long NTP_SYNC_FRESH_SEC = 3600;   // <1 hour = solid green
+const unsigned long NTP_SYNC_STALE_SEC = 86400;  // >24 hours = LED off
+
+// ============================================================
+// 7-Segment Display Configuration (Adafruit HT16K33 Backpacks)
+// ============================================================
+const uint8_t DISPLAY_ADDR_YEAR   = 0x70;  // Display 1: Year (e.g., 2026)
+const uint8_t DISPLAY_ADDR_DATE   = 0x71;  // Display 2: MM.DD (e.g., 03.08)
+const uint8_t DISPLAY_ADDR_TIME   = 0x72;  // Display 3: HH:MM UTC (e.g., 12:34)
+const uint8_t DISPLAY_ADDR_STATUS = 0x73;  // Display 4: SS.x (e.g., 34.S)
+const uint8_t DISPLAY_BRIGHTNESS  = 4;     // 0-15 brightness level
+const uint8_t DISPLAY_COUNT       = 4;     // Number of displays
 
 #endif // CONFIG_H

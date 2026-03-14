@@ -50,6 +50,9 @@ When modifying code in `wwvb_transmitter/`:
 | `wwvb_encoder.h/.cpp` | `test_wwvb_encoder.ino`, `hardware_validation.ino` |
 | `dst_manager.h/.cpp` | `test_dst_calculation.ino` |
 | `ntp_manager.h/.cpp` | *(none — test_ntp_client uses ESP32 libs directly)* |
+| `status_leds.h/.cpp` | `test_status_display.ino` (GPIO pins + constants inlined) |
+| `display_manager.h/.cpp` | `test_status_display.ino` (display config inlined) |
+| `config.h` (GPIO/display defs) | `test_status_display.ino` |
 
 ### 6. Development Workflow
 - **VS Code**: Primary editor for all code development

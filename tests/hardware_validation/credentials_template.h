@@ -12,11 +12,11 @@
 #ifndef CREDENTIALS_H
 #define CREDENTIALS_H
 
-const char* WIFI_SSID     = "your-network-name";
-const char* WIFI_PASSWORD = "your-wifi-password";
+const char* const WIFI_SSID     = "your-network-name";
+const char* const WIFI_PASSWORD = "your-wifi-password";
 
-const char* NTP_SERVER_1  = "192.168.1.100";   // Primary: local stratum-1
-const char* NTP_SERVER_2  = "192.168.1.101";   // Secondary: local stratum-1
-const char* NTP_SERVER_3  = "pool.ntp.org";     // Tertiary: internet fallback
+const char* const NTP_SERVER_1  = "192.168.1.100";   // Primary: local stratum-1
+const char* const NTP_SERVER_2  = "192.168.1.101";   // Secondary: local stratum-1
+const char* const NTP_SERVER_3  = "pool.ntp.org";     // Tertiary: internet fallback
 
 #endif // CREDENTIALS_H

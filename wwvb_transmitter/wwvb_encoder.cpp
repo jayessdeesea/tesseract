@@ -6,7 +6,7 @@
  * Frame layout reference: specs/wwvb_protocol.md
  * 
  * Key implementation notes:
- * - Time passed in must be for the NEXT minute (WWVB convention)
+ * - Time passed in is the current minute (clock displays this time)
  * - All time values are UTC
  * - BCD encoding, most significant weight first
  * - UT1 correction hardcoded to +0.0 (irrelevant for consumer clocks)

@@ -26,13 +26,13 @@ An ESP32 acquires accurate UTC time via NTP from local stratum-1 GPS-disciplined
 ```mermaid
 graph TD
     VIN["⚡ ESP32 VIN (+5V from USB)"] --> R2["🟠 100Ω<br/>Current Limit"]
-    VIN --> VCC["ULN2003AN<br/>Pin 9 (VCC)"]
+    VIN --> VCC["ULN2003AN<br/>Pin 9 (COM)"]
     R2 --> COIL["🟣 Ferrite Coil<br/>200 turns, 30 AWG"]
     COIL --> OUT1["ULN2003AN<br/>Pin 16 (Output 1)"]
     
     GPIO["📍 ESP32 GPIO18 / D18<br/>60 kHz PWM Output"] --> IN1["ULN2003AN<br/>Pin 1 (Input 1)"]
     
-    COM["ULN2003AN<br/>Pin 8 (COM)"] --> GND["⏚ ESP32 GND"]
+    COM["ULN2003AN<br/>Pin 8 (GND)"] --> GND["⏚ ESP32 GND"]
 
     style VIN fill:#e1f5fe,stroke:#0277bd
     style GPIO fill:#e1f5fe,stroke:#0277bd
@@ -45,7 +45,7 @@ graph TD
     style COM fill:#e8f5e9,stroke:#2e7d32
 ```
 
-> **ULN2003AN DIP-16 pinout** (notch on left): Pin 1 = bottom-left (Input 1), Pin 8 = top-left (COM/GND), Pin 9 = top-right (VCC), Pin 16 = bottom-right (Output 1)
+> **ULN2003AN DIP-16 pinout** (notch on left): Pin 1 = bottom-left (Input 1), Pin 8 = top-left (GND), Pin 9 = top-right (COM/+5V), Pin 16 = bottom-right (Output 1)
 
 ### Antenna Construction
 
@@ -79,11 +79,11 @@ Credentials are stored in `credentials.h` files that are **never committed to gi
 1. Copy `wwvb_transmitter/credentials_template.h` → `wwvb_transmitter/credentials.h`
 2. Edit `credentials.h` with your real WiFi and NTP settings:
 ```cpp
-const char* WIFI_SSID     = "your-network-name";
-const char* WIFI_PASSWORD = "your-wifi-password";
-const char* NTP_SERVER_1  = "192.168.1.100";   // Your local NTP server
-const char* NTP_SERVER_2  = "192.168.1.101";   // Backup NTP server
-const char* NTP_SERVER_3  = "pool.ntp.org";     // Internet fallback
+const char* const WIFI_SSID     = "your-network-name";
+const char* const WIFI_PASSWORD = "your-wifi-password";
+const char* const NTP_SERVER_1  = "192.168.1.100";   // Your local NTP server
+const char* const NTP_SERVER_2  = "192.168.1.101";   // Backup NTP server
+const char* const NTP_SERVER_3  = "pool.ntp.org";     // Internet fallback
 ```
 
 **For WiFi-dependent tests** (same process in each test directory):
@@ -208,6 +208,17 @@ tesseract/
 3. **Transmit** — Each second, modulates the 60 kHz carrier by turning it off for 200ms (binary 0), 500ms (binary 1), or 800ms (marker), then back on for the remainder
 4. **Receive** — WWVB clocks detect the amplitude changes and decode the time code
 
+### Real-Time Timing Architecture
+
+The main loop runs on a **100ms quantum state machine** aligned to UTC second boundaries — no blocking delays. Each quantum follows an execute-first pattern:
+
+1. **Sleep** for the remainder of the 100ms quantum
+2. **Execute** the action calculated in the previous quantum (carrier on/off)
+3. **Read** current state (UTC time, NTP status)
+4. **Calculate** the action for the next quantum
+
+WWVB bit durations (200ms, 500ms, 800ms) align exactly to the 100ms grid, so carrier transitions happen at precise quantum boundaries. Display updates are scheduled at quantum 3 (300ms into each second), completely decoupled from transmission timing. This eliminates the jitter and display flicker that would result from blocking `delay()` calls during bit transmission.
+
 ## FCC Compliance
 
 This device operates under [FCC Part 15.209](https://www.ecfr.gov/current/title-47/chapter-I/subchapter-A/part-15/subpart-C/section-15.209) — intentional radiator below 490 kHz. The limit is 40 μV/m at 300 meters at 60 kHz. The ferrite rod antenna is electrically tiny (wavelength = 5 km), making it inherently inefficient. Combined with low drive current and building attenuation, the transmitted signal stays well below FCC limits. See [`specs/fcc_compliance.md`](specs/fcc_compliance.md) for the full analysis.
@@ -237,7 +248,7 @@ The transmitter includes a **master clock display panel** — a self-setting clo
 
 ### 7-Segment Display Panel
 
-Four I2C 4-digit 7-segment displays (Adafruit HT16K33 backpack) showing complete UTC date/time:
+Four I2C 4-digit 7-segment displays (Adafruit HT16K33 backpack) showing local date/time:
 
 ```mermaid
 graph LR

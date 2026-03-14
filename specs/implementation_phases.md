@@ -102,10 +102,10 @@ If the ferrite rod hasn't arrived, you can do early proof-of-concept testing wit
 ### Display Layout
 | Display | Address | Content | Example |
 |---------|---------|---------|---------|
-| 1 | 0x70 | Year | `2026` |
-| 2 | 0x71 | Month.Day | `03.08` |
-| 3 | 0x72 | Hour:Min (UTC) | `12:34` |
-| 4 | 0x73 | Second + Status | `34.S` |
+| 1 | 0x70 | Year (local) | `2026` |
+| 2 | 0x71 | Month.Day (local) | `03.08` |
+| 3 | 0x72 | Hour:Min (local) | `16:34` |
+| 4 | 0x73 | Second + Status | `34.d` |
 
 ### LED Status Panel
 - **🟢 GPIO 19:** NTP sync (solid = good, slow blink = aging, off = failed)
@@ -113,7 +113,7 @@ If the ferrite rod hasn't arrived, you can do early proof-of-concept testing wit
 - **🔴 GPIO 25:** Transmit heartbeat (brief flash each second)
 
 ### Deliverables
-- Complete status display showing UTC date/time
+- Complete status display showing local date/time
 - LED panel showing system health at a glance
 - No serial monitor or computer needed for status monitoring
 

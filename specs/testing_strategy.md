@@ -69,6 +69,9 @@ When modifying code in `wwvb_transmitter/`:
 | `wwvb_encoder.h/.cpp` | `test_wwvb_encoder.ino`, `hardware_validation.ino` |
 | `dst_manager.h/.cpp` | `test_dst_calculation.ino` |
 | `ntp_manager.h/.cpp` | *(none — test_ntp_client uses ESP32 libs directly)* |
+| `status_leds.h/.cpp` | `test_status_display.ino` (GPIO pins + constants inlined) |
+| `display_manager.h/.cpp` | `test_status_display.ino` (display config inlined) |
+| `config.h` (GPIO/display defs) | `test_status_display.ino` |
 
 ## Test Framework
 Simple assertion macros defined in each test sketch:
@@ -146,7 +149,20 @@ Simple assertion macros defined in each test sketch:
   - Marker: 800ms off, 200ms on
 - Full frame transmission (60 seconds)
 
-### 5. hardware_validation (Full System)
+### 6. test_status_display (Requires LEDs + I2C Displays)
+**Location:** `tests/test_status_display/test_status_display.ino`
+**Self-contained:** Yes — GPIO pins and display config inlined
+**Inlines:** GPIO pin constants and display addresses from `config.h`
+**Dependencies:** Adafruit LED Backpack + Adafruit GFX (Arduino Library Manager)
+
+**Tests:**
+- I2C bus scan (discovers all connected HT16K33 displays)
+- LED self-test (cycle green → blue → red → all on → all off)
+- Display test patterns (8888, dashes, display IDs, I2C addresses)
+- Running clock simulation with LED status cycling
+- Verifies all 3 LEDs light up and all 4 displays respond
+
+### 7. hardware_validation (Full System)
 **Location:** `tests/hardware_validation/hardware_validation.ino`
 **Self-contained:** Yes — encoder functions inlined
 **Inlines:** `wwvb_encoder` functions (compact version)
