@@ -176,6 +176,11 @@ void loop() {
       quantumGridAligned = true;
     }
     
+    // Calculate DST status every second (cheap math, ensures display
+    // shows correct DST status immediately after NTP sync, not just
+    // at the next minute boundary when encodeNewFrame() runs)
+    currentDstStatus = calculateDSTStatus(&timeinfo, DEFAULT_TIMEZONE);
+    
     // Encode new frame at second 0
     if (currentSecond == 0) {
       encodeNewFrame(&timeinfo);

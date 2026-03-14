@@ -33,46 +33,46 @@ void statusLedsUpdate(bool wifiConnected, long ntpSyncAgeSec, bool transmitting)
   
   // ---- WiFi LED (Blue, GPIO 23) ----
   if (wifiConnected) {
-    digitalWrite(LED_WIFI_PIN, HIGH);  // Solid = connected
+    analogWrite(LED_WIFI_PIN, LED_BRIGHTNESS);  // Solid = connected
   } else {
     // Fast blink = trying to connect/reconnect
-    digitalWrite(LED_WIFI_PIN, (now / LED_BLINK_WIFI_CONN) % 2);
+    analogWrite(LED_WIFI_PIN, ((now / LED_BLINK_WIFI_CONN) % 2) ? LED_BRIGHTNESS : 0);
   }
   
   // ---- NTP LED (Green, GPIO 19) ----
   if (ntpSyncAgeSec < 0) {
     // Never synced
-    digitalWrite(LED_NTP_PIN, LOW);
+    analogWrite(LED_NTP_PIN, 0);
   } else if ((unsigned long)ntpSyncAgeSec < NTP_SYNC_FRESH_SEC) {
     // Fresh sync — solid green
-    digitalWrite(LED_NTP_PIN, HIGH);
+    analogWrite(LED_NTP_PIN, LED_BRIGHTNESS);
   } else if ((unsigned long)ntpSyncAgeSec < NTP_SYNC_STALE_SEC) {
     // Aging — slow blink
-    digitalWrite(LED_NTP_PIN, (now / LED_BLINK_NTP_AGING) % 2);
+    analogWrite(LED_NTP_PIN, ((now / LED_BLINK_NTP_AGING) % 2) ? LED_BRIGHTNESS : 0);
   } else {
     // Stale (>24 hours) — off
-    digitalWrite(LED_NTP_PIN, LOW);
+    analogWrite(LED_NTP_PIN, 0);
   }
   
   // ---- TX LED (Red, GPIO 25) ----
   if (txFlashActive && (now - txFlashStart >= LED_TX_FLASH_MS)) {
-    digitalWrite(LED_TX_PIN, LOW);
+    analogWrite(LED_TX_PIN, 0);
     txFlashActive = false;
   }
 }
 
 
 void statusLedsTxFlash() {
-  digitalWrite(LED_TX_PIN, HIGH);
+  analogWrite(LED_TX_PIN, LED_BRIGHTNESS);
   txFlashStart = millis();
   txFlashActive = true;
 }
 
 
 void statusLedsAllOff() {
-  digitalWrite(LED_NTP_PIN, LOW);
-  digitalWrite(LED_WIFI_PIN, LOW);
-  digitalWrite(LED_TX_PIN, LOW);
+  analogWrite(LED_NTP_PIN, 0);
+  analogWrite(LED_WIFI_PIN, 0);
+  analogWrite(LED_TX_PIN, 0);
   txFlashActive = false;
 }
 

@@ -87,6 +87,7 @@ const int LED_BLINK_NO_SYNC    = 250;   // Fast blink when no NTP sync
 const int LED_BLINK_WIFI_CONN  = 300;   // Fast blink while WiFi connecting
 const int LED_BLINK_NTP_AGING  = 1000;  // Slow blink when NTP aging (>1 hour)
 const int LED_TX_FLASH_MS      = 50;    // Brief flash each second for TX activity
+const int LED_BRIGHTNESS       = 20;    // 0-255 PWM brightness (20 ≈ 8% duty)
 
 // NTP sync age thresholds (seconds)
 const unsigned long NTP_SYNC_FRESH_SEC = 3600;   // <1 hour = solid green
